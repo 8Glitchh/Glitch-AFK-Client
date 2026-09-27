@@ -1,0 +1,55 @@
+{
+  "name": "glitch-afk-client",
+  "productName": "Glitch AFK Client",
+  "version": "1.0.0",
+  "description": "Lightweight, render-free Minecraft Java Edition AFK console client for offline-mode servers.",
+  "main": "src/main/main.js",
+  "author": "Glitch AFK Client contributors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "check": "node scripts/check.js",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "mineflayer": "^4.39.0",
+    "prismarine-chat": "^1.13.0"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "io.github.glitchafkclient.app",
+    "productName": "Glitch AFK Client",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Glitch AFK Client",
+      "artifactName": "Glitch-AFK-Client-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "Glitch-AFK-Client-${version}-portable.exe"
+    }
+  }
+}

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Strict CSP: only local files, no remote code, no inline scripts. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Glitch AFK Client</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================== TOP BAR ============================== -->
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">&gt;_</span> <span class="glitch">Glitch</span> AFK Client</div>
+    <div class="top-center">
+      <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">Idle</span></span>
+      <span class="dest" id="destText" title="Network destination: the only host this app connects to">No server selected</span>
+      <span class="pill afk" id="afkPill"><span class="dot"></span><span id="afkText">AFK off</span></span>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" id="btnConnect">Connect</button>
+      <button class="btn" id="btnReconnect" title="Reconnect now (resets back-off)">Reconnect</button>
+      <button class="btn danger" id="btnDisconnect">Disconnect</button>
+    </div>
+  </header>
+
+  <!-- ============================== LEFT SIDEBAR ============================== -->
+  <aside class="left">
+    <nav class="nav">
+      <button class="nav-btn active" data-view="chat"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Chat</button>
+      <button class="nav-btn" data-view="afk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>AFK automation</button>
+      <button class="nav-btn" data-view="logs"><svg viewBox="0 0 24 24"><path d="M5 5h14M5 10h14M5 15h9M5 20h6"/></svg>Logs / debug</button>
+      <button class="nav-btn" data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings</button>
+    </nav>
+    <div class="section-head">
+      <span>Servers</span>
+      <button class="icon-btn" id="btnNewProfile" title="Add server">＋</button>
+    </div>
+    <ul class="server-list" id="serverList"></ul>
+    <div class="left-foot" id="appVersion"></div>
+  </aside>
+
+  <!-- ============================== MAIN ============================== -->
+  <main class="main">
+
+    <!-- Chat -->
+    <section class="view active" id="view-chat">
+      <div class="toolbar">
+        <h2>Chat</h2>
+        <div class="spacer"></div>
+        <button class="btn sm" id="btnPing" title="Chat alert (ping) sound on/off. Set ping words in Settings.">🔔 Ping on</button>
+        <label class="check" title="Show players joining/leaving (from the tab list)"><input type="checkbox" id="chkJoinLeave"> Join/leave</label>
+        <label class="check"><input type="checkbox" id="chkTimestamps"> Timestamps</label>
+        <button class="btn sm" id="btnCopyChat">Copy</button>
+        <button class="btn sm" id="btnExportChat">Export .txt</button>
+        <button class="btn sm" id="btnClearChat">Clear</button>
+      </div>
+      <div class="chat-log" id="chatLog" tabindex="0" aria-live="polite"></div>
+      <button class="jump-bottom hidden" id="btnJumpBottom">↓ New messages</button>
+      <form class="chat-input" id="chatForm" autocomplete="off">
+        <input type="text" id="chatInput" maxlength="256" placeholder="Connect to a server to chat. Commands start with /" disabled>
+        <span class="counter" id="chatCounter">0/256</span>
+        <button class="btn primary" id="btnSend" type="submit" disabled>Send</button>
+      </form>
+    </section>
+
+    <!-- Server profile editor -->
+    <section class="view" id="view-server">
+      <div class="toolbar">
+        <h2 id="serverTitle">New server</h2>
+        <div class="spacer"></div>
+        <button class="btn danger sm" id="btnDeleteProfile">Delete</button>
+      </div>
+      <form class="scroll form" id="profileForm" autocomplete="off" novalidate>
+        <div class="card">
+          <h3>Connection</h3>
+          <div class="grid2">
+            <label>Display name<input id="pName" maxlength="64" placeholder="My server"></label>
+            <label>Minecraft version<select id="pVersion"></select></label>
+            <label>Server address<input id="pHost" maxlength="253" placeholder="play.example.com" required></label>
+            <label>Port<input id="pPort" type="number" min="1" max="65535" value="25565" required></label>
+            <label>Username<input id="pUsername" maxlength="16" placeholder="Steve_AFK" required></label>
+            <label>Authentication<input value="Offline (username only)" disabled></label>
+          </div>
+          <p class="hint">Offline mode only works on servers configured with <code>online-mode=false</code>. No Microsoft or Mojang login is used or requested. Port 25565 also checks the host's SRV record.</p>
+        </div>
+
+        <div class="card">
+          <h3>Auto reconnect</h3>
+          <div class="grid3">
+            <label class="check"><input type="checkbox" id="rcEnabled"> Reconnect automatically</label>
+            <label class="check"><input type="checkbox" id="rcOnKick"> Also after being kicked</label>
+            <label>Back-off<select id="rcMode"><option value="exponential">Exponential</option><option value="fixed">Fixed delay</option></select></label>
+            <label>Delay (s)<input type="number" id="rcDelay" min="1" max="3600"></label>
+            <label>Max delay (s)<input type="number" id="rcMaxDelay" min="1" max="7200"></label>
+            <label>Max attempts (0 = ∞)<input type="number" id="rcMaxAttempts" min="0"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Join commands</h3>
+          <p class="hint">Sent automatically after spawning, each after its own delay. Write <code>{{password}}</code> where your login password goes, e.g. <code>/login {{password}}</code>. Never type the password itself into a command.</p>
+          <div id="joinList" class="join-list"></div>
+          <button class="btn sm" type="button" id="btnAddJoin">＋ Add command</button>
+        </div>
+
+        <div class="card">
+          <h3>Login password <span class="muted">(optional)</span></h3>
+          <div class="secret-row">
+            <input type="password" id="pSecret" maxlength="256" placeholder="Used only for {{password}}" autocomplete="new-password">
+            <label class="check"><input type="checkbox" id="pSecretRemember"> Remember securely</label>
+          </div>
+          <p class="hint" id="secretState"></p>
+          <button class="btn sm" type="button" id="btnForgetSecret">Forget password</button>
+        </div>
+
+        <div class="form-actions">
+          <span class="form-error" id="profileError"></span>
+          <button class="btn" type="submit" id="btnSaveProfile">Save</button>
+          <button class="btn primary" type="button" id="btnSaveConnect">Save &amp; connect</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- AFK automation -->
+    <section class="view" id="view-afk">
+      <div class="toolbar">
+        <h2>AFK automation</h2>
+        <div class="spacer"></div>
+        <span class="pill afk" id="afkPill2"><span class="dot"></span><span id="afkText2">Off</span></span>
+        <button class="btn primary" id="btnAfkToggle">Start AFK</button>
+      </div>
+      <div class="scroll form">
+        <div class="notice">⚠ Only enable anti-AFK movement on servers whose rules allow it. Many servers ban AFK machines or automation.</div>
+        <div class="card">
+          <h3>Settings for <span id="afkProfileName">—</span></h3>
+          <div class="grid3">
+            <label class="check"><input type="checkbox" id="aAutoStart"> Start automatically on connect</label>
+            <label>Interval (s)<input type="number" id="aInterval" min="5" max="3600"></label>
+            <label>Random jitter (%)<input type="number" id="aJitter" min="0" max="90"></label>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Actions per cycle</h3>
+          <div class="grid3">
+            <label class="check"><input type="checkbox" id="aWalk"> Small step forward &amp; back</label>
+            <label>Step duration (ms)<input type="number" id="aWalkMs" min="100" max="2000"></label>
+            <span></span>
+            <label class="check"><input type="checkbox" id="aRotate"> Small camera rotation</label>
+            <label>Max rotation (°)<input type="number" id="aRotateDeg" min="1" max="90"></label>
+            <span></span>
+            <label class="check"><input type="checkbox" id="aJump"> Jump</label>
+            <label class="check"><input type="checkbox" id="aSneak"> Sneak briefly</label>
+            <label class="check"><input type="checkbox" id="aSwing"> Swing arm</label>
+          </div>
+          <p class="hint">Start/stop is independent of the connection: when AFK is on and you disconnect, it waits and resumes after the next spawn.</p>
+        </div>
+        <div class="card stats" id="afkStats"></div>
+        <div class="form-actions">
+          <span class="form-error" id="afkError"></span>
+          <button class="btn" id="btnAfkSave">Save to server profile</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section class="view" id="view-logs">
+      <div class="toolbar">
+        <h2>Logs / debug</h2>
+        <div class="spacer"></div>
+        <select id="logLevel" class="sm">
+          <option value="all">All levels</option>
+          <option value="info">Info+</option>
+          <option value="warn">Warnings+</option>
+          <option value="error">Errors</option>
+          <option value="debug">Debug only</option>
+        </select>
+        <label class="check"><input type="checkbox" id="chkDebug"> Debug mode (raw packets)</label>
+        <button class="btn sm" id="btnExportLogs">Export .txt</button>
+        <button class="btn sm" id="btnClearLogs">Clear</button>
+      </div>
+      <div class="log-view" id="logView"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view" id="view-settings">
+      <div class="toolbar"><h2>Settings</h2></div>
+      <div class="scroll form">
+        <div class="card">
+          <h3>Chat</h3>
+          <div class="grid2">
+            <label class="check"><input type="checkbox" id="sTimestamps"> Show timestamps</label>
+            <label class="check"><input type="checkbox" id="sJoinLeave"> Show join/leave (tab list) events</label>
+            <label class="check"><input type="checkbox" id="sActionBar"> Show action-bar messages</label>
+            <label class="check"><input type="checkbox" id="sRedact"> Mask /login and /register arguments in chat &amp; logs</label>
+            <label>Chat history lines<input type="number" id="sMaxChat" min="100" max="20000"></label>
+            <label>Log history lines<input type="number" id="sMaxLog" min="100" max="20000"></label>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Chat alerts (ping)</h3>
+          <div class="grid2 top">
+            <label>Ping words (one per line)<textarea id="sAlertWords" rows="5" maxlength="4000" spellcheck="false" placeholder="diamond&#10;help&#10;your username"></textarea></label>
+            <div class="stack">
+              <label class="check"><input type="checkbox" id="sAlertUser"> Ping when someone says my username</label>
+              <label class="check"><input type="checkbox" id="sAlertSound"> Play a ding sound</label>
+              <label>Volume<input type="range" id="sAlertVolume" min="0" max="100"></label>
+              <label class="check"><input type="checkbox" id="sAlertNotify"> Windows notification when the app isn't focused</label>
+              <div><button class="btn sm" type="button" id="btnTestDing">▶ Test sound</button></div>
+            </div>
+          </div>
+          <p class="hint">When someone else's chat message contains one of these words, the line is highlighted and (if enabled) a ding plays. Whole words, not case-sensitive. Your own messages never ping you. Mute quickly with the 🔔 button above the chat.</p>
+        </div>
+        <div class="card">
+          <h3>Performance &amp; background</h3>
+          <div class="grid2">
+            <label class="check"><input type="checkbox" id="sLowMem"> Low-memory mode (skip unused Mineflayer features)</label>
+            <label>Requested view distance<select id="sView">
+              <option value="tiny">Tiny (lowest RAM)</option><option value="short">Short</option>
+              <option value="normal">Normal</option><option value="far">Far</option></select></label>
+            <label class="check"><input type="checkbox" id="sTray"> Close to system tray instead of quitting</label>
+            <label class="check"><input type="checkbox" id="sSleep"> Keep the app running while connected (block app suspension)</label>
+          </div>
+          <p class="hint">Changes to low-memory mode and view distance apply on the next connection.</p>
+        </div>
+        <div class="card">
+          <h3>Privacy &amp; local data</h3>
+          <ul class="plain">
+            <li><b>Network:</b> the only network connection is to the Minecraft server shown in the top bar. No analytics, telemetry, or update checks.</li>
+            <li><b>profiles.json:</b> server name, host, port, username, version, reconnect, AFK and join-command settings. No passwords.</li>
+            <li><b>settings.json:</b> the options on this page.</li>
+            <li><b>secrets.json:</b> only if you tick “Remember securely”: login passwords encrypted with your OS account (Windows DPAPI). Otherwise passwords live in memory until you quit.</li>
+            <li>Chat and logs are kept in memory only, unless you export them.</li>
+          </ul>
+          <p class="hint">Data folder: <code id="dataDir"></code></p>
+          <button class="btn sm" id="btnOpenData">Open data folder</button>
+        </div>
+        <div class="form-actions">
+          <span class="form-error" id="settingsError"></span>
+          <button class="btn primary" id="btnSaveSettings">Save settings</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================== RIGHT SIDEBAR ============================== -->
+  <aside class="right">
+    <div class="section-head"><span>Connection</span></div>
+    <dl class="info" id="infoConn"></dl>
+    <div class="section-head"><span>Player</span></div>
+    <div class="bars">
+      <div class="bar-row"><span>Health</span><div class="bar health"><i id="barHealth"></i></div><b id="valHealth">—</b></div>
+      <div class="bar-row"><span>Food</span><div class="bar food"><i id="barFood"></i></div><b id="valFood">—</b></div>
+    </div>
+    <dl class="info" id="infoPlayer"></dl>
+    <div class="section-head"><span>Last message</span></div>
+    <div class="last-msg" id="lastMsg">—</div>
+  </aside>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="format.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
