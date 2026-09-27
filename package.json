@@ -46,10 +46,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "Glitch AFK Client",
-      "artifactName": "Glitch-AFK-Client-Setup-${version}.exe"
+      "artifactName": "Glitch-AFK-Client-Setup.exe"
     },
     "portable": {
-      "artifactName": "Glitch-AFK-Client-${version}-portable.exe"
+      "artifactName": "Glitch-AFK-Client-Portable.exe"
     }
   }
 }

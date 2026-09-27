@@ -1,4 +1,21 @@
+<div align="center">
+
+<img src="assets/icon.png" width="96" alt="Glitch AFK Client icon">
+
 # Glitch AFK Client
+
+**Stay AFK on Minecraft servers without running Minecraft.**
+Chat, auto-login, auto-reconnect and anti-AFK in a tiny Windows app.
+
+### [⬇ Download for Windows](https://github.com/8Glitchh/Glitch-AFK-Client/releases/latest/download/Glitch-AFK-Client-Setup.exe)
+
+<sub>Windows 10/11 · 64-bit · free · [portable version](https://github.com/8Glitchh/Glitch-AFK-Client/releases/latest/download/Glitch-AFK-Client-Portable.exe) · [all releases](https://github.com/8Glitchh/Glitch-AFK-Client/releases)</sub>
+
+<img src="assets/screenshot.png" alt="Glitch AFK Client connected to a server" width="820">
+
+</div>
+
+---
 
 A lightweight, render-free **Minecraft Java Edition** console client for staying AFK on servers that allow **offline-mode (username-only) connections**.
 
@@ -10,10 +27,11 @@ It shows chat, player stats and connection info, sends your join commands, recon
 
 ## Download (Windows)
 
-**[⬇ Download the latest release](../../releases/latest)**, then pick one:
+1. **[Download `Glitch-AFK-Client-Setup.exe`](https://github.com/8Glitchh/Glitch-AFK-Client/releases/latest/download/Glitch-AFK-Client-Setup.exe)** and run it.
+2. It installs for your user only (no admin needed) and adds a **desktop shortcut** and a **Start-menu entry**. Open it from there like any other program.
+3. To uninstall: *Windows Settings → Apps → Glitch AFK Client*.
 
-- **`Glitch-AFK-Client-Setup-<version>.exe`** (recommended): run it, and it installs for your user only (no admin needed) and adds a **desktop shortcut** and a **Start-menu entry**. Open it from there like any other program. Uninstall from *Settings → Apps*.
-- **`Glitch-AFK-Client-<version>-portable.exe`**: no install, just double-click to run.
+No install wanted? Grab **[`Glitch-AFK-Client-Portable.exe`](https://github.com/8Glitchh/Glitch-AFK-Client/releases/latest/download/Glitch-AFK-Client-Portable.exe)** and double-click it.
 
 > Windows SmartScreen may warn because the executable isn't code-signed. Choose *More info → Run anyway*, or sign it yourself (see below).
 
@@ -93,8 +111,10 @@ npm run dist
 ```
 
 Output in `dist/`:
-- `Glitch-AFK-Client-Setup-1.0.0.exe`: installer (per-user, desktop + Start-menu shortcuts, uninstaller)
-- `Glitch-AFK-Client-1.0.0-portable.exe`: single-file portable build
+- `Glitch-AFK-Client-Setup.exe`: installer (per-user, desktop + Start-menu shortcuts, uninstaller)
+- `Glitch-AFK-Client-Portable.exe`: single-file portable build
+
+File names have no version number on purpose: the README's download buttons point to `releases/latest/download/<file>`, so they always get the newest release. For a new release, bump `version` in `package.json`, run `npm run dist`, and upload both files to a new GitHub release.
 
 `npm run pack` builds an unpacked folder (`dist/win-unpacked`) for quick testing. To regenerate the icon: `node scripts/make-icon.js`. To code-sign, set `CSC_LINK` / `CSC_KEY_PASSWORD` before `npm run dist` (see electron-builder docs).
 
